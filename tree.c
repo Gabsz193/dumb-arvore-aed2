@@ -11,30 +11,26 @@ char is_empty(Tree *t) {
 }
 
 Tree* append(Tree **t, int v) {
-    if(is_empty(*t)) {
-        *t = (Tree*) malloc(sizeof(Tree));
+    if(*t == NULL) {
+        *t = malloc(sizeof(Tree));
         (*t)->v = v;
-        (*t)->l = initialize();
-        (*t)->r = initialize();
+        (*t)->l = NULL;
+        (*t)->r = NULL;
         return *t;
     } else {
         if((*t)->v >= v) {
             return append(&(*t)->l, v);
-        }
-        if((*t)->v < v) {
+        } else {
             return append(&(*t)->r, v);
         }
     }
 }
 
 Tree* search_first(Tree *t, int v) {
-    if(is_empty(t)) {
-        return NULL;
-    }
-    if(t->v == v) {
+    if(t == NULL || t->v == v) {
         return t;
     }
-    if(t->v > v) {
+    if(v < t->v) {
         return search_first(t->l, v);
     } else {
         return search_first(t->r, v);
@@ -82,45 +78,72 @@ void foo(Tree *t, Tree *b, Tree *s) {
     } else {
         b->l = s;
     }
-    free(t);
 }
 
-char _remove_value(Tree *t, Tree *b, int v) {
+Tree* _remove_value(Tree *t, Tree *b, int v) {
+    Tree *tmp1, *tmp2;
     if(is_empty(t)) {
-        return 0;
+        return NULL;
     }
     if(t->v == v) {
-        if(has_only_child(t) || no_child(t)) {
-            if(t->l) {
-                foo(t, b, t->l);
-            }
-            if(t->r) {
-                foo(t, b, t->r);
-            }
-        } else {
-            Tree *tmp1 = t->l, *tmp2;
-
-            while(tmp1) {
+        if(!(has_only_child(t) || no_child(t))) {
+            tmp1 = t->l, tmp2 = tmp1;
+            while(tmp1->r) {
                 tmp2 = tmp1;
                 tmp1 = tmp1->r;               
             }
 
-            
+            Tree* tmp_l = t->l;
+            Tree* tmp_r = t->r;
+            t->l = tmp1->l;
+            t->r = tmp1->r;
 
-            tmp2->l = t->l;
-            tmp2->r = t->r;
+            if(tmp_l == tmp1->l) {
+                tmp1->l = t;
+            } else {
+                tmp1->l = tmp_l;
+            }
 
-            foo(t, b, tmp2);
-            
+            tmp1->r = tmp_r;
+            if(b) {
+                foo(tmp1, b, tmp1);                
+            }
+
+            b = tmp2;
+        }
+        if(b) {
+            if(t->l) {
+                foo(t, b, t->l);
+            } else {
+                foo(t, b, t->r);
+            }
+        }
+
+        t = NULL;
+
+        if(b == NULL) {
+            return tmp1;
+        } else {
+            return t;
         }
     }
-    if(t->v >= v) {
-        _remove_value(t->l, t, v);
+    if(t->v > v) {
+        return _remove_value(t->l, t, v);
     } else {
-        _remove_value(t->r, t, v);
+        return _remove_value(t->r, t, v);
     }
 }
 
-char remove_value(Tree *t, int v) {
-    _remove_value(t, NULL, v);
+Tree* remove_value(Tree *t, int v) {
+    return _remove_value(t, NULL, v);
+}
+
+void clear_tree(Tree **t) {
+    if(*t != NULL) {
+        clear_tree(&((*t)->l));
+        clear_tree(&((*t)->r));
+    } else {
+        free(*t);
+    }
+    *t = NULL;
 }
